@@ -1,35 +1,35 @@
-📚 StudyFlow AI – Smart Study Assistant
+StudyFlow AI – Smart Study Assistant
 
 StudyFlow AI is an AI-powered learning platform designed to help students study more efficiently. The platform provides intelligent tools such as content summarization, quiz generation, flashcards, and productivity tracking to improve learning outcomes.
 
 This project was developed as part of a hackathon project to enhance the educational experience using modern web technologies and artificial intelligence.
 
-🚀 Features
-🧠 AI Content Summarization
+Features
+AI Content Summarization
 
 Upload or paste study material and generate concise summaries of key concepts.
 
-❓ Quiz Generator
+Quiz Generator
 
 Automatically generate quizzes from study content to test understanding.
 
-🗂 Flashcards
+Flashcards
 
 Create and review flashcards for quick revision and memory reinforcement.
 
-⏱ Focus Tracker
+Focus Tracker
 
 Track study sessions and maintain productivity using focus timers.
 
-📊 Study Dashboard
+Study Dashboard
 
 View insights about study time, progress, and performance.
 
-🎯 Interactive Learning
+Interactive Learning
 
 Encourages active learning through quizzes and revision tools.
 
-🏗 Project Architecture
+Project Architecture
 
 The platform is built using a modern frontend framework with modular components.
 
@@ -74,7 +74,7 @@ Node.js
 
 npm package manager
 
-📂 Project Structure
+Project Structure
 brainy-learning-pal-main
 │
 ├── public
@@ -104,7 +104,7 @@ npm run dev
 Open your browser and go to:
 
 http://localhost:5173
-🎯 Use Cases
+Use Cases
 
 StudyFlow AI can be used by:
 
@@ -120,7 +120,7 @@ Online learners
 
 The platform helps users save time, improve focus, and learn more effectively.
 
-🔮 Future Improvements
+ Future Improvements
 
 Potential future enhancements include:
 
@@ -136,20 +136,20 @@ Smart revision scheduling
 
 These features will further enhance the adaptive learning experience.
 
-👨💻 Team
+ Team
 
-Team Name: Brainy Learning Pal
+Team Name: Innovative Ninjas | 1631
 
 Team Members:
 
-Dhruvil Shah
+Dhruvil Shah 
+Nishva Shah 
+Riti Shah 
 
-(Add other team members if applicable)
-
-📄 License
+ License
 
 This project is developed for educational and hackathon purposes.
 
-⭐ Acknowledgements
+ Acknowledgements
 
 We acknowledge the inspiration from modern AI-powered learning platforms and educational technology tools that aim to improve student productivity and learning efficiency.
