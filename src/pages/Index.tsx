@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Brain, Zap, Shield, BarChart3, BookOpen, Target, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import heroBg from "@/assets/hero-bg.jpg";
 
 const features = [
   { icon: Brain, title: "AI Notes Summarizer", desc: "Paste your notes, get instant structured summaries with key concepts highlighted." },
@@ -38,10 +37,7 @@ const Index = () => {
 
       {/* Hero */}
       <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <img src={heroBg} alt="" className="w-full h-full object-cover" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
         <div className="container relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
