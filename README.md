@@ -153,3 +153,5 @@ This project is developed for educational and hackathon purposes.
  Acknowledgements
 
 We acknowledge the inspiration from modern AI-powered learning platforms and educational technology tools that aim to improve student productivity and learning efficiency.
+
+The End
