@@ -55,6 +55,7 @@ const navItems = [
 ];
 
 const Dashboard = () => {
+  // Restore last active tab from sessionStorage so refresh keeps you on same tab
   const [activeTab, setActiveTab] = useState<string>(() => {
     return sessionStorage.getItem("activeTab") || "home";
   });
@@ -62,7 +63,10 @@ const Dashboard = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [focusState, setFocusState] = useState<FocusTrackerState>(DEFAULT_FOCUS_STATE);
 
+  // isPageVisible tracks REAL browser tab switches only (not internal navigation)
   const isPageVisibleRef = useRef<boolean>(!document.hidden);
+
+  // intervalRef lives in Dashboard so timer NEVER stops on internal tab switch
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isTrackingRef = useRef<boolean>(false);
   isTrackingRef.current = focusState.isTracking;
@@ -70,11 +74,13 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Persist active tab to sessionStorage whenever it changes
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
     sessionStorage.setItem("activeTab", tabId);
   };
 
+  // Auth check
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -87,6 +93,7 @@ const Dashboard = () => {
     checkAuth();
   }, [navigate]);
 
+  // Visibility listener - fires ONLY on real browser tab/window switch, never on internal nav
   const handleVisibilityChange = useCallback(() => {
     if (!isTrackingRef.current) return;
     const visible = !document.hidden;
@@ -109,13 +116,18 @@ const Dashboard = () => {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [handleVisibilityChange]);
 
+  // Timer lives in Dashboard — survives all internal tab switches
+  // Uses isPageVisibleRef (not document.hidden) to correctly count focused time
   useEffect(() => {
     if (focusState.isTracking) {
+      // Clear any existing interval first to avoid doubles
       if (intervalRef.current) clearInterval(intervalRef.current);
+
       intervalRef.current = setInterval(() => {
         setFocusState((p) => ({
           ...p,
           totalTime: p.totalTime + 1,
+          // Only count as focused if browser tab is actually visible
           focusedTime: isPageVisibleRef.current ? p.focusedTime + 1 : p.focusedTime,
         }));
       }, 1000);
