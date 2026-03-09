@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Brain, BookOpen, Zap, FileText, BarChart3, Target, LogOut, Shield, CreditCard } from "lucide-react";
+import {
+  Brain,
+  BookOpen,
+  Zap,
+  FileText,
+  BarChart3,
+  Target,
+  LogOut,
+  Shield,
+  CreditCard,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -8,7 +18,9 @@ import DashboardHome from "@/components/dashboard/DashboardHome";
 import Summarizer from "@/components/dashboard/Summarizer";
 import QuizGenerator from "@/components/dashboard/QuizGenerator";
 import Flashcards from "@/components/dashboard/Flashcards";
-import FocusTracker, { FocusTrackerState } from "@/components/dashboard/FocusTracker";
+import FocusTracker, {
+  FocusTrackerState,
+} from "@/components/dashboard/FocusTracker";
 import StudyAnalytics from "@/components/dashboard/StudyAnalytics";
 import Billing from "@/components/dashboard/Billing";
 
@@ -23,6 +35,16 @@ const DEFAULT_FOCUS_STATE: FocusTrackerState = {
   showHistory: false,
   startTime: null,
 };
+
+const navItems = [
+  { id: "home", label: "Dashboard", icon: BarChart3 },
+  { id: "summarizer", label: "Summarizer", icon: FileText },
+  { id: "quiz", label: "Quiz Generator", icon: Zap },
+  { id: "flashcards", label: "Flashcards", icon: BookOpen },
+  { id: "focus", label: "Focus Tracker", icon: Target },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "billing", label: "Billing", icon: CreditCard },
+];
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
@@ -56,6 +78,11 @@ const Dashboard = () => {
     checkAuth();
   }, [navigate]);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "summarizer":
@@ -65,7 +92,12 @@ const Dashboard = () => {
       case "flashcards":
         return <Flashcards />;
       case "focus":
-        return <FocusTracker state={focusState} onStateChange={setFocusState} />;
+        return (
+          <FocusTracker
+            state={focusState}
+            onStateChange={setFocusState}
+          />
+        );
       case "analytics":
         return <StudyAnalytics />;
       case "billing":
@@ -76,27 +108,84 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex">
-      <aside className="w-64 p-4 border-r">
-        <Link to="/" className="flex items-center gap-2 mb-6">
-          <Brain className="h-6 w-6" />
-          <span className="font-bold">StudyFlow AI</span>
-        </Link>
+    <div className="min-h-screen bg-background flex">
+      
+      {/* Sidebar */}
+      <aside className="w-64 border-r border-border/50 bg-card/30 backdrop-blur-sm flex flex-col fixed h-full">
+        
+        {/* Logo */}
+        <div className="p-4 border-b border-border/50">
+          <Link to="/" className="flex items-center gap-2">
+            <Brain className="h-6 w-6 text-primary" />
+            <span className="text-lg font-bold gradient-text">
+              StudyFlow AI
+            </span>
+          </Link>
+        </div>
 
-        <button onClick={() => setActiveTab("home")}>Dashboard</button>
-        <button onClick={() => setActiveTab("summarizer")}>Summarizer</button>
-        <button onClick={() => setActiveTab("quiz")}>Quiz</button>
-        <button onClick={() => setActiveTab("flashcards")}>Flashcards</button>
-        <button onClick={() => setActiveTab("focus")}>Focus</button>
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-1">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === item.id
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              }`}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
 
-        {isAdmin && (
-          <button onClick={() => navigate("/admin")}>
-            <Shield className="h-4 w-4" /> Admin
-          </button>
-        )}
+              {item.id === "focus" && focusState.isTracking && (
+                <span className="ml-auto h-2 w-2 rounded-full bg-primary animate-pulse" />
+              )}
+            </button>
+          ))}
+
+          {isAdmin && (
+            <button
+              onClick={() => navigate("/admin")}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-accent hover:bg-accent/10 transition-colors"
+            >
+              <Shield className="h-4 w-4" />
+              Admin Panel
+            </button>
+          )}
+        </nav>
+
+        {/* User Section */}
+        <div className="p-3 border-t border-border/50">
+          <div className="flex items-center gap-3 px-3 py-2 mb-2">
+            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-bold">
+              {user?.email?.[0]?.toUpperCase() || "U"}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                {user?.user_metadata?.full_name || "Student"}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user?.email}
+              </p>
+            </div>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-muted-foreground"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
+          </Button>
+        </div>
       </aside>
 
-      <main className="flex-1 p-8">{renderContent()}</main>
+      {/* Main Content */}
+      <main className="flex-1 ml-64 p-8">{renderContent()}</main>
     </div>
   );
 };
