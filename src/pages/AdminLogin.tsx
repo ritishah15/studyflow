@@ -22,7 +22,6 @@ const AdminLogin = () => {
       const { error, data } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      // Verify admin role
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")

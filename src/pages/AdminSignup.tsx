@@ -7,8 +7,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-// This page requires an "admin invite code" so random users can't self-promote.
-// Set this in your environment or change the value below.
 const ADMIN_INVITE_CODE = import.meta.env.VITE_ADMIN_INVITE_CODE || "STUDYFLOW-ADMIN-2026";
 
 const AdminSignup = () => {
@@ -29,7 +27,6 @@ const AdminSignup = () => {
     }
     setLoading(true);
     try {
-      // Create the auth user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -40,7 +37,6 @@ const AdminSignup = () => {
       const userId = data.user?.id;
       if (!userId) throw new Error("Failed to create user");
 
-      // Promote to admin role (insert into user_roles)
       const { error: roleError } = await supabase
         .from("user_roles")
         .upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" });
