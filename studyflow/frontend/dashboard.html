@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — StudyFlow AI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .welcome-banner {
+      background: linear-gradient(135deg, #1a1714 0%, #2d1f3d 100%);
+      border-radius: var(--radius-lg); padding: 32px 36px; color: white;
+      margin-bottom: 32px; position: relative; overflow: hidden;
+    }
+    .welcome-banner::after {
+      content: '🎓'; position: absolute; right: 36px; top: 50%; transform: translateY(-50%);
+      font-size: 64px; opacity: 0.2;
+    }
+    .welcome-banner h2 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+    .welcome-banner p { color: rgba(255,255,255,0.6); font-size: 15px; }
+
+    .quick-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
+    .quick-btn {
+      display: flex; align-items: center; gap: 10px; padding: 14px 20px;
+      background: white; border: 1.5px solid var(--border); border-radius: 12px;
+      cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text);
+      transition: all 0.2s; text-decoration: none; font-family: 'DM Sans', sans-serif;
+    }
+    .quick-btn:hover { border-color: var(--accent1); color: var(--accent1); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .quick-btn .qb-icon { font-size: 20px; }
+
+    .deadline-item {
+      display: flex; align-items: center; gap: 16px; padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .deadline-item:last-child { border-bottom: none; }
+    .deadline-badge { padding: 4px 10px; border-radius: 50px; font-size: 11px; font-weight: 600; font-family: 'Space Mono', monospace; }
+    .badge-exam { background: #fef2f2; color: #dc2626; }
+    .badge-assignment { background: #eff6ff; color: #2563eb; }
+    .badge-project { background: #f0fdf4; color: #16a34a; }
+    .badge-quiz { background: #fffbeb; color: #d97706; }
+    .deadline-days { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; }
+    .deadline-days.urgent { color: #dc2626; }
+    .deadline-days.soon { color: #d97706; }
+    .deadline-days.ok { color: #16a34a; }
+
+    .note-item { padding: 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
+    .note-item:hover { border-color: var(--accent1); background: #fff7ed; }
+    .note-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .note-preview { font-size: 12px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .plan-item { display: flex; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+    .plan-day-badge { background: linear-gradient(135deg, #f97316, #ec4899); color: white; border-radius: 8px; padding: 8px 12px; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; text-align: center; min-width: 50px; flex-shrink: 0; }
+    .plan-focus { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .plan-tasks { font-size: 12px; color: var(--text2); }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text3); }
+    .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">StudyFlow AI</div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <button class="sidebar-link active" onclick="showPage('home')" id="nav-home">
+      <span class="nav-icon">🏠</span> Dashboard
+    </button>
+    <button class="sidebar-link" onclick="showPage('notes')" id="nav-notes">
+      <span class="nav-icon">📄</span> Notes Compiler
+    </button>
+    <button class="sidebar-link" onclick="showPage('deadlines')" id="nav-deadlines">
+      <span class="nav-icon">🗓️</span> Deadlines
+    </button>
+    <button class="sidebar-link" onclick="showPage('studyplan')" id="nav-studyplan">
+      <span class="nav-icon">📚</span> Study Plans
+    </button>
+    <button class="sidebar-link" onclick="showPage('resources')" id="nav-resources">
+      <span class="nav-icon">🔗</span> Resources
+    </button>
+
+    <div class="nav-section-label" style="margin-top:8px">Account</div>
+    <button class="sidebar-link" onclick="showPage('billing')" id="nav-billing">
+      <span class="nav-icon">💳</span> Billing & Plans
+    </button>
+    <button class="sidebar-link" onclick="showPage('settings')" id="nav-settings">
+      <span class="nav-icon">⚙️</span> Settings
+    </button>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="user-info">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div>
+        <div class="user-name" id="userName">Loading...</div>
+        <div class="user-plan" id="userPlan">Free Plan</div>
+      </div>
+    </div>
+    <button class="sidebar-link" style="margin-top:8px;color:#dc2626" onclick="SF.Auth.logout()">
+      <span class="nav-icon">🚪</span> Sign Out
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+  <!-- Mobile header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px" class="mobile-header">
+    <button class="hamburger" id="mobileHamburger" style="display:none" onclick="openSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+    <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:900;background:linear-gradient(135deg,#f97316,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent" class="mobile-logo">StudyFlow AI</div>
+  </div>
+
+  <!-- ── HOME PAGE ── -->
+  <div id="page-home">
+    <div class="welcome-banner">
+      <h2>Good day, <span id="welcomeName">Scholar</span>! 👋</h2>
+      <p>Here's your academic overview for today.</p>
+    </div>
+
+    <div class="quick-actions">
+      <a class="quick-btn" onclick="showPage('notes')"><span class="qb-icon">📄</span> Summarize Notes</a>
+      <a class="quick-btn" onclick="showPage('deadlines')"><span class="qb-icon">➕</span> Add Deadline</a>
+      <a class="quick-btn" onclick="showPage('studyplan')"><span class="qb-icon">📚</span> Create Study Plan</a>
+      <a class="quick-btn" onclick="showPage('resources')"><span class="qb-icon">🔍</span> Find Resources</a>
+    </div>
+
+    <div class="stats-row" id="dashStats">
+      <div class="stat-card">
+        <div class="stat-label">Notes Saved</div>
+        <div class="stat-value" id="statNotes">0</div>
+        <div class="stat-change up" id="statNotesChange">↑ Start summarizing!</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Deadlines</div>
+        <div class="stat-value" id="statDeadlines">0</div>
+        <div class="stat-change" id="statDeadlineChange" style="color:var(--text3)">Add from syllabus</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Study Plans</div>
+        <div class="stat-value" id="statPlans">0</div>
+        <div class="stat-change" style="color:var(--text3)">Build your schedule</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Plan</div>
+        <div class="stat-value" id="statPlan" style="font-size:20px;padding-top:6px">Free</div>
+        <div class="stat-change" style="color:var(--accent1);cursor:pointer" onclick="showPage('billing')">Upgrade to Pro →</div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Upcoming Deadlines</span>
+          <button class="btn btn-sm btn-ghost" onclick="showPage('deadlines')">View All</button>
+        </div>
+        <div id="dashDeadlines">
+          <div class="empty-state"><div class="empty-icon">📅</div><p>No deadlines yet.<br>Add them from the Deadlines tab.</p></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent Notes</span>
+          <button class="btn btn-sm btn-ghost" onclick="showPage('notes')">View All</button>
+        </div>
+        <div id="dashNotes">
+          <div class="empty-state"><div class="empty-icon">📝</div><p>No notes yet.<br>Start by summarizing your first note.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NOTES PAGE ── -->
+  <div id="page-notes" style="display:none">
+    <div class="page-header">
+      <h1>Notes Compiler</h1>
+      <p>Paste your notes or text — AI extracts key points, topics, and a clean summary.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:20px">Input</div>
+        <div class="tabs">
+          <button class="tab active" onclick="switchNoteTab('text',this)">📝 Text / Paste</button>
+          <button class="tab" onclick="switchNoteTab('file',this)">📎 Upload File</button>
+        </div>
+
+        <div id="noteTextTab">
+          <div class="form-group">
+            <label>Note Title (optional)</label>
+            <input class="form-input" id="noteTitle" placeholder="e.g., Chapter 3 — Thermodynamics">
+          </div>
+          <div class="form-group">
+            <label>Your Notes</label>
+            <textarea class="form-input" id="noteContent" rows="12" placeholder="Paste your lecture notes, textbook chapter, or any study material here..." style="resize:vertical;line-height:1.8"></textarea>
+          </div>
+        </div>
+
+        <div id="noteFileTab" style="display:none">
+          <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleFileDrop(event)">
+            <div class="upload-icon">📎</div>
+            <h3>Drop your file here</h3>
+            <p>Supports TXT files · Click to browse</p>
+          </div>
+          <input type="file" id="fileInput" accept=".txt,.md" style="display:none" onchange="handleFileSelect(this)">
+          <div id="fileNameDisplay" style="margin-top:12px;font-size:13px;color:var(--text2);display:none"></div>
+        </div>
+
+        <div style="margin-top:20px">
+          <button class="btn btn-primary btn-block" id="summarizeBtn" onclick="summarizeNotes()">✨ Summarize with AI</button>
+          <div id="notesUsageWarning" style="text-align:center;margin-top:12px;font-size:12px;color:var(--text3);display:none"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:20px">AI Summary</div>
+        <div id="summaryPlaceholder" style="color:var(--text3);font-size:14px;text-align:center;padding:60px 20px">
+          <div style="font-size:48px;margin-bottom:12px">🤖</div>
+          <p>Your AI summary will appear here.<br>Paste your notes and click Summarize.</p>
+        </div>
+        <div id="summaryResult" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h3 style="font-family:'Playfair Display',serif;font-weight:700;font-size:18px" id="summaryTitle"></h3>
+            <span style="font-size:12px;padding:4px 10px;border-radius:50px;background:var(--surface2);color:var(--text3);font-family:'Space Mono',monospace" id="summaryDifficulty"></span>
+          </div>
+          <p style="font-size:14px;color:var(--text2);line-height:1.8;margin-bottom:20px" id="summaryText"></p>
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px">Key Points</div>
+          <ul id="summaryPoints" style="list-style:none;display:flex;flex-direction:column;gap:8px"></ul>
+          <div style="font-weight:600;font-size:13px;margin:16px 0 10px">Topics</div>
+          <div class="ai-tag-list" id="summaryTopics"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="saveNote()">💾 Save Note</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saved notes -->
+    <div class="card" style="margin-top:24px">
+      <div class="card-header">
+        <span class="card-title">Saved Notes</span>
+        <span id="noteCount" style="font-size:13px;color:var(--text3)">0 notes</span>
+      </div>
+      <div id="savedNotesList"></div>
+    </div>
+  </div>
+
+  <!-- ── DEADLINES PAGE ── -->
+  <div id="page-deadlines" style="display:none">
+    <div class="page-header">
+      <h1>Deadline Intelligence</h1>
+      <p>Add deadlines manually or let AI extract them from your syllabus.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:20px">Add Manually</div>
+        <div class="form-group">
+          <label>Task / Subject Name</label>
+          <input class="form-input" id="dlTitle" placeholder="e.g., Physics Mid-Term Exam">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" class="form-input" id="dlDate">
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select class="form-input" id="dlType">
+              <option value="exam">Exam</option>
+              <option value="assignment">Assignment</option>
+              <option value="project">Project</option>
+              <option value="quiz">Quiz</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Priority</label>
+          <select class="form-input" id="dlPriority">
+            <option value="high">🔴 High</option>
+            <option value="medium" selected>🟡 Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="addDeadlineManual()">Add Deadline</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:20px">AI Extract from Syllabus</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Paste your course syllabus and AI will automatically extract all deadlines, exams, and assignments.</p>
+        <textarea class="form-input" id="syllabusText" rows="8" placeholder="Paste your syllabus here..." style="resize:vertical;margin-bottom:16px"></textarea>
+        <button class="btn btn-secondary btn-block" id="extractBtn" onclick="extractDeadlines()">🤖 Extract Deadlines with AI</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Your Deadlines</span>
+        <span id="dlCount" style="font-size:13px;color:var(--text3)">0 items</span>
+      </div>
+      <div id="deadlinesList"></div>
+    </div>
+  </div>
+
+  <!-- ── STUDY PLAN PAGE ── -->
+  <div id="page-studyplan" style="display:none">
+    <div class="page-header">
+      <h1>Study Plan Generator</h1>
+      <p>Input your exam details and get a personalized day-by-day study schedule.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:24px">
+      <div class="card" style="align-self:start">
+        <div class="card-title" style="margin-bottom:20px">Plan Details</div>
+        <div class="form-group">
+          <label>Subject</label>
+          <input class="form-input" id="planSubject" placeholder="e.g., Organic Chemistry">
+        </div>
+        <div class="form-group">
+          <label>Exam Date</label>
+          <input type="date" class="form-input" id="planExamDate">
+        </div>
+        <div class="form-group">
+          <label>Topics to Cover</label>
+          <textarea class="form-input" id="planTopics" rows="5" placeholder="e.g.:&#10;- Alkanes and Alkenes&#10;- Reaction Mechanisms&#10;- Functional Groups" style="resize:vertical"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Current Level</label>
+          <select class="form-input" id="planLevel">
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate" selected>Intermediate</option>
+            <option value="Advanced">Advanced</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-block" id="planBtn" onclick="generateStudyPlan()">📚 Generate Plan</button>
+      </div>
+
+      <div class="card">
+        <div id="planPlaceholder" style="text-align:center;padding:60px 20px;color:var(--text3)">
+          <div style="font-size:48px;margin-bottom:12px">📅</div>
+          <p>Your personalized study plan will appear here.<br>Fill in the details and click Generate.</p>
+        </div>
+        <div id="planResult" style="display:none">
+          <div class="card-header">
+            <span class="card-title" id="planTitle"></span>
+            <span style="font-size:12px;background:var(--surface2);padding:4px 10px;border-radius:50px;font-family:'Space Mono',monospace;color:var(--text3)" id="planMeta"></span>
+          </div>
+          <div id="planItems"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RESOURCES PAGE ── -->
+  <div id="page-resources" style="display:none">
+    <div class="page-header">
+      <h1>Resource Recommender</h1>
+      <p>Get curated learning resources for any topic — filtered by type and difficulty.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:24px">
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:16px;align-items:end">
+        <div class="form-group" style="margin:0">
+          <label>Topic</label>
+          <input class="form-input" id="resourceTopic" placeholder="e.g., Binary Search Trees, Photosynthesis...">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Difficulty Level</label>
+          <select class="form-input" id="resourceLevel">
+            <option>Beginner</option>
+            <option selected>Intermediate</option>
+            <option>Advanced</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="resourceBtn" onclick="findResources()" style="margin-bottom:20px">🔍 Find Resources</button>
+      </div>
+    </div>
+
+    <div id="resourcePlaceholder" style="text-align:center;padding:60px;color:var(--text3)">
+      <div style="font-size:48px;margin-bottom:12px">🔗</div>
+      <p>Enter a topic above to get curated learning resources.</p>
+    </div>
+    <div id="resourcesGrid" style="display:none;display:grid;grid-template-columns:repeat(3,1fr);gap:20px"></div>
+  </div>
+
+  <!-- ── BILLING PAGE ── -->
+  <div id="page-billing" style="display:none">
+    <div class="page-header">
+      <h1>Billing & Plans</h1>
+      <p>Manage your subscription and payment details.</p>
+    </div>
+
+    <div id="currentPlanBanner" style="margin-bottom:24px"></div>
+
+    <div class="pricing-grid" style="max-width:700px">
+      <div class="pricing-card">
+        <div class="pricing-tier">Free</div>
+        <div class="pricing-price">₹0<span class="pricing-period">/month</span></div>
+        <ul class="pricing-features">
+          <li>5 AI summaries / month</li>
+          <li>3 study plans</li>
+          <li>Basic deadline calendar</li>
+          <li>Resource recommendations</li>
+        </ul>
+        <button class="btn btn-outline btn-block" id="freePlanBtn" onclick="selectPlan('free')">Current Plan</button>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-tier">Pro</div>
+        <div class="pricing-price" style="color:white">₹299<span class="pricing-period">/month</span></div>
+        <ul class="pricing-features" style="color:rgba(255,255,255,0.8)">
+          <li>Unlimited AI summaries</li>
+          <li>Unlimited study plans</li>
+          <li>Smart deadline extraction</li>
+          <li>PDF Export & sharing</li>
+          <li>Priority AI processing</li>
+        </ul>
+        <button class="btn btn-primary btn-block" id="proPlanBtn" onclick="openProModal()">Upgrade to Pro →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS PAGE ── -->
+  <div id="page-settings" style="display:none">
+    <div class="page-header">
+      <h1>Settings</h1>
+      <p>Manage your account preferences.</p>
+    </div>
+    <div class="card" style="max-width:540px">
+      <div class="card-title" style="margin-bottom:24px">Profile</div>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input class="form-input" id="settingsName">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input class="form-input" id="settingsEmail" readonly style="opacity:0.6">
+      </div>
+      <div class="form-group">
+        <label>Course</label>
+        <input class="form-input" id="settingsCourse">
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+      <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
+        <div style="font-weight:600;margin-bottom:8px;color:#dc2626">Danger Zone</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Clear all your stored data and notes from this device.</p>
+        <button class="btn btn-ghost" style="border-color:#fecaca;color:#dc2626" onclick="clearData()">🗑️ Clear All Data</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRO MODAL -->
+<div class="modal-overlay" id="proModal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeProModal()">×</button>
+    <div style="font-size:32px;margin-bottom:12px">💳</div>
+    <h2>Upgrade to Pro</h2>
+    <p style="color:var(--text2);margin-bottom:24px;font-size:15px">Unlock unlimited AI features for ₹299/month</p>
+    <div style="background:var(--surface2);border-radius:12px;padding:16px;margin-bottom:20px;font-size:13px;color:var(--text2)">
+      <strong style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text3)">SANDBOX MODE</strong><br>
+      Test card: 4111 1111 1111 1111 · CVV: 123 · Any future date
+    </div>
+    <div class="form-group">
+      <label>Card Number</label>
+      <input class="form-input" placeholder="4111 1111 1111 1111" id="modalCardNum" maxlength="19" oninput="formatCard(this)">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Expiry</label><input class="form-input" placeholder="MM/YY" id="modalCardExp" maxlength="5"></div>
+      <div class="form-group"><label>CVV</label><input class="form-input" placeholder="123" id="modalCardCvv" maxlength="3" type="password"></div>
+    </div>
+    <button class="btn btn-primary btn-block btn-lg" id="modalPayBtn" onclick="processUpgrade()">Pay ₹299 →</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/backend.js"></script>
+<script>
+// ── INIT ──
+let currentUser = SF.Auth.requireAuth();
+let currentNoteResult = null;
+
+function init() {
+  if (!currentUser) return;
+  document.getElementById('welcomeName').textContent = currentUser.name.split(' ')[0];
+  document.getElementById('userName').textContent = currentUser.name;
+  document.getElementById('userAvatar').textContent = currentUser.name[0].toUpperCase();
+  document.getElementById('userPlan').textContent = currentUser.plan === 'pro' ? '⭐ Pro Plan' : 'Free Plan';
+  document.getElementById('settingsName').value = currentUser.name;
+  document.getElementById('settingsEmail').value = currentUser.email;
+  document.getElementById('settingsCourse').value = currentUser.course || '';
+
+  // Set min date to today
+  document.getElementById('dlDate').min = new Date().toISOString().split('T')[0];
+  document.getElementById('planExamDate').min = new Date().toISOString().split('T')[0];
+
+  refreshDashboard();
+  checkMobile();
+}
+
+function checkMobile() {
+  if (window.innerWidth <= 768) {
+    document.getElementById('mobileHamburger').style.display = 'flex';
+  }
+}
+
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ── PAGES ──
+function showPage(name) {
+  document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
+  document.getElementById('page-' + name).style.display = 'block';
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+  if (window.innerWidth <= 768) closeSidebar();
+  if (name === 'home') refreshDashboard();
+  if (name === 'notes') refreshNotesList();
+  if (name === 'deadlines') refreshDeadlines();
+  if (name === 'billing') refreshBilling();
+  window.scrollTo(0, 0);
+}
+
+// ── DASHBOARD ──
+function refreshDashboard() {
+  const notes = SF.NotesDB.getAll();
+  const deadlines = SF.DeadlineDB.getAll();
+  const users = SF.DB.get('sf_users') || {};
+  const fullUser = users[currentUser.email] || currentUser;
+
+  document.getElementById('statNotes').textContent = notes.length;
+  document.getElementById('statDeadlines').textContent = deadlines.length;
+  document.getElementById('statPlans').textContent = (fullUser.studyPlans || []).length;
+  document.getElementById('statPlan').textContent = currentUser.plan === 'pro' ? '⭐ Pro' : 'Free';
+
+  // Deadlines widget
+  const urgentDeadlines = [...deadlines].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)).slice(0, 4);
+  const dlEl = document.getElementById('dashDeadlines');
+  if (urgentDeadlines.length === 0) {
+    dlEl.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><p>No deadlines yet.<br>Add them from the Deadlines tab.</p></div>`;
+  } else {
+    dlEl.innerHTML = urgentDeadlines.map(d => {
+      const days = SF.UI.daysUntil(d.dueDate);
+      const urgencyClass = days <= 3 ? 'urgent' : days <= 7 ? 'soon' : 'ok';
+      const urgencyText = days < 0 ? 'Overdue!' : days === 0 ? 'Today!' : `${days}d left`;
+      return `<div class="deadline-item">
+        <span class="deadline-badge badge-${d.type}">${d.type.toUpperCase()}</span>
+        <div style="flex:1"><div style="font-weight:600;font-size:14px">${d.title}</div>
+        <div style="font-size:12px;color:var(--text3)">${SF.UI.formatDate(d.dueDate)}</div></div>
+        <span class="deadline-days ${urgencyClass}">${urgencyText}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Notes widget
+  const recentNotes = notes.slice(0, 3);
+  const notesEl = document.getElementById('dashNotes');
+  if (recentNotes.length === 0) {
+    notesEl.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><p>No notes yet.<br>Start by summarizing your first note.</p></div>`;
+  } else {
+    notesEl.innerHTML = recentNotes.map(n => `
+      <div class="note-item">
+        <div class="note-title">${n.title || 'Untitled Note'}</div>
+        <div class="note-preview">${n.summary || ''}</div>
+      </div>`).join('');
+  }
+}
+
+// ── NOTES ──
+function switchNoteTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('noteTextTab').style.display = tab === 'text' ? 'block' : 'none';
+  document.getElementById('noteFileTab').style.display = tab === 'file' ? 'block' : 'none';
+}
+
+function handleFileDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadArea').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) readFile(file);
+}
+function handleFileSelect(input) { if (input.files[0]) readFile(input.files[0]); }
+function readFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('noteContent').value = e.target.result;
+    document.getElementById('fileNameDisplay').textContent = '📎 ' + file.name;
+    document.getElementById('fileNameDisplay').style.display = 'block';
+    switchNoteTab('text', document.querySelectorAll('.tab')[0]);
+    SF.UI.toast('File loaded!', 'success');
+  };
+  reader.readAsText(file);
+}
+
+async function summarizeNotes() {
+  const content = document.getElementById('noteContent').value.trim();
+  if (!content || content.length < 50) { SF.UI.toast('Please enter at least 50 characters of notes.', 'error'); return; }
+
+  const users = SF.DB.get('sf_users') || {};
+  const fullUser = users[currentUser.email] || {};
+  if (currentUser.plan !== 'pro' && (fullUser.summariesUsed || 0) >= 5) {
+    SF.UI.toast('Free plan limit reached (5 summaries). Upgrade to Pro for unlimited!', 'error');
+    showPage('billing'); return;
+  }
+
+  const btn = document.getElementById('summarizeBtn');
+  SF.UI.loading(btn, true);
+  document.getElementById('summaryPlaceholder').style.display = 'block';
+  document.getElementById('summaryResult').style.display = 'none';
+
+  try {
+    const raw = await SF.AI.summarizeNotes(content);
+    const data = SF.UI.parseJSON(raw);
+    if (!data) throw new Error('Invalid response');
+
+    currentNoteResult = { ...data, rawContent: content, inputTitle: document.getElementById('noteTitle').value };
+
+    document.getElementById('summaryTitle').textContent = data.title || document.getElementById('noteTitle').value || 'Summary';
+    document.getElementById('summaryText').textContent = data.summary || '';
+    document.getElementById('summaryDifficulty').textContent = data.difficulty || '';
+    document.getElementById('summaryPoints').innerHTML = (data.keyPoints || []).map(p =>
+      `<li style="display:flex;gap:10px;font-size:14px;color:var(--text2)"><span style="color:#10b981;font-weight:700;flex-shrink:0">✓</span>${p}</li>`
+    ).join('');
+    document.getElementById('summaryTopics').innerHTML = (data.topics || []).map(t =>
+      `<span class="ai-tag">${t}</span>`).join('');
+
+    document.getElementById('summaryPlaceholder').style.display = 'none';
+    document.getElementById('summaryResult').style.display = 'block';
+
+    SF.Auth.updateUser({ summariesUsed: (fullUser.summariesUsed || 0) + 1 });
+    SF.UI.toast('Summary generated!', 'success');
+  } catch (e) {
+    SF.UI.toast('AI error. Check your connection and try again.', 'error');
+  }
+  SF.UI.loading(btn, false, '✨ Summarize with AI');
+}
+
+function saveNote() {
+  if (!currentNoteResult) return;
+  SF.NotesDB.add({
+    title: currentNoteResult.title || currentNoteResult.inputTitle || 'Untitled',
+    summary: currentNoteResult.summary,
+    keyPoints: currentNoteResult.keyPoints,
+    topics: currentNoteResult.topics,
+    difficulty: currentNoteResult.difficulty
+  });
+  refreshNotesList();
+  SF.UI.toast('Note saved!', 'success');
+}
+
+function refreshNotesList() {
+  const notes = SF.NotesDB.getAll();
+  document.getElementById('noteCount').textContent = notes.length + ' notes';
+  const el = document.getElementById('savedNotesList');
+  if (notes.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><p>No saved notes yet. Summarize some notes and click Save!</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">` +
+    notes.map(n => `
+      <div class="note-item" style="cursor:default">
+        <div class="note-title">${n.title}</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px">${SF.UI.formatDate(n.createdAt)}</div>
+        <div class="note-preview" style="white-space:normal;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:10px">${n.summary}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${(n.topics||[]).map(t=>`<span class="ai-tag">${t}</span>`).join('')}
+        </div>
+      </div>`).join('') + '</div>';
+}
+
+// ── DEADLINES ──
+function addDeadlineManual() {
+  const title = document.getElementById('dlTitle').value.trim();
+  const dueDate = document.getElementById('dlDate').value;
+  if (!title || !dueDate) { SF.UI.toast('Please fill in title and date.', 'error'); return; }
+  SF.DeadlineDB.add({ title, dueDate, type: document.getElementById('dlType').value, priority: document.getElementById('dlPriority').value });
+  document.getElementById('dlTitle').value = '';
+  document.getElementById('dlDate').value = '';
+  refreshDeadlines();
+  SF.UI.toast('Deadline added!', 'success');
+}
+
+async function extractDeadlines() {
+  const text = document.getElementById('syllabusText').value.trim();
+  if (!text || text.length < 50) { SF.UI.toast('Please paste a syllabus (at least 50 characters).', 'error'); return; }
+  const btn = document.getElementById('extractBtn');
+  SF.UI.loading(btn, true);
+  try {
+    const raw = await SF.AI.extractDeadlines(text);
+    const data = SF.UI.parseJSON(raw);
+    if (!Array.isArray(data) || data.length === 0) throw new Error();
+    data.forEach(d => SF.DeadlineDB.add(d));
+    refreshDeadlines();
+    SF.UI.toast(`✓ Extracted ${data.length} deadlines!`, 'success');
+    document.getElementById('syllabusText').value = '';
+  } catch { SF.UI.toast('Could not extract deadlines. Try pasting more detailed syllabus text.', 'error'); }
+  SF.UI.loading(btn, false, '🤖 Extract Deadlines with AI');
+}
+
+function refreshDeadlines() {
+  const deadlines = [...SF.DeadlineDB.getAll()].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  document.getElementById('dlCount').textContent = deadlines.length + ' items';
+  const el = document.getElementById('deadlinesList');
+  if (deadlines.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><p>No deadlines yet. Add them above or extract from your syllabus.</p></div>`;
+    return;
+  }
+  el.innerHTML = deadlines.map(d => {
+    const days = SF.UI.daysUntil(d.dueDate);
+    const urgencyClass = days <= 3 ? 'urgent' : days <= 7 ? 'soon' : 'ok';
+    const urgencyText = days < 0 ? '⚠️ Overdue!' : days === 0 ? '🔴 Today!' : `${days} days left`;
+    const priorityColors = { high: '#fef2f2', medium: '#fffbeb', low: '#f0fdf4' };
+    return `<div class="deadline-item" style="background:${priorityColors[d.priority]||'white'};border-radius:10px;padding:14px 16px;margin-bottom:8px;border:1px solid var(--border)">
+      <span class="deadline-badge badge-${d.type}">${d.type}</span>
+      <div style="flex:1;margin:0 16px">
+        <div style="font-weight:600;font-size:14px">${d.title}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">${SF.UI.formatDate(d.dueDate)} · ${d.priority} priority</div>
+      </div>
+      <span class="deadline-days ${urgencyClass}" style="margin-right:16px">${urgencyText}</span>
+      <button onclick="removeDeadline('${d.id}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3);padding:4px">🗑️</button>
+    </div>`;
+  }).join('');
+}
+
+function removeDeadline(id) {
+  SF.DeadlineDB.remove(id);
+  refreshDeadlines();
+  SF.UI.toast('Deadline removed.', 'default');
+}
+
+// ── STUDY PLAN ──
+async function generateStudyPlan() {
+  const subject = document.getElementById('planSubject').value.trim();
+  const examDate = document.getElementById('planExamDate').value;
+  const topics = document.getElementById('planTopics').value.trim();
+  if (!subject || !examDate || !topics) { SF.UI.toast('Please fill in all plan details.', 'error'); return; }
+
+  const btn = document.getElementById('planBtn');
+  SF.UI.loading(btn, true);
+  document.getElementById('planPlaceholder').style.display = 'block';
+  document.getElementById('planResult').style.display = 'none';
+
+  try {
+    const raw = await SF.AI.generateStudyPlan(subject, examDate, topics);
+    const data = SF.UI.parseJSON(raw);
+    if (!data || !data.plan) throw new Error();
+
+    document.getElementById('planTitle').textContent = data.title || subject + ' Study Plan';
+    document.getElementById('planMeta').textContent = `${data.totalDays || '?'} days · ${data.dailyHours || '?'}h/day`;
+    document.getElementById('planItems').innerHTML = (data.plan || []).slice(0, 14).map(d => `
+      <div class="plan-item">
+        <div class="plan-day-badge">DAY<br>${d.day}</div>
+        <div>
+          <div class="plan-focus">${d.focus}</div>
+          <div class="plan-tasks">${(d.tasks || []).map(t => `• ${t}`).join(' · ')}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-family:'Space Mono',monospace">${d.duration || ''}</div>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('planPlaceholder').style.display = 'none';
+    document.getElementById('planResult').style.display = 'block';
+
+    // Save plan
+    const users = SF.DB.get('sf_users') || {};
+    const plans = (users[currentUser.email]?.studyPlans || []);
+    plans.push({ ...data, subject, examDate, createdAt: new Date().toISOString() });
+    SF.Auth.updateUser({ studyPlans: plans });
+    SF.UI.toast('Study plan generated & saved!', 'success');
+  } catch { SF.UI.toast('Could not generate plan. Please try again.', 'error'); }
+  SF.UI.loading(btn, false, '📚 Generate Plan');
+}
+
+// ── RESOURCES ──
+async function findResources() {
+  const topic = document.getElementById('resourceTopic').value.trim();
+  const level = document.getElementById('resourceLevel').value;
+  if (!topic) { SF.UI.toast('Please enter a topic.', 'error'); return; }
+  const btn = document.getElementById('resourceBtn');
+  SF.UI.loading(btn, true);
+  document.getElementById('resourcePlaceholder').style.display = 'none';
+  document.getElementById('resourcesGrid').style.display = 'none';
+  try {
+    const raw = await SF.AI.getResourceRecommendations(topic, level);
+    const data = SF.UI.parseJSON(raw);
+    if (!data || !data.resources) throw new Error();
+    const typeIcons = { video: '🎬', article: '📰', practice: '✏️', book: '📚' };
+    const typeColors = { video: '#fef2f2', article: '#eff6ff', practice: '#f0fdf4', book: '#fffbeb' };
+    document.getElementById('resourcesGrid').innerHTML = data.resources.map(r => `
+      <div class="feature-card" style="cursor:pointer" onclick="window.open('${r.link}','_blank')">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <span style="font-size:24px">${typeIcons[r.type] || '🔗'}</span>
+          <span style="font-size:11px;background:${typeColors[r.type]||'var(--surface2)'};padding:4px 10px;border-radius:50px;font-family:'Space Mono',monospace;font-weight:600;color:var(--text2)">${r.type?.toUpperCase()}</span>
+        </div>
+        <h3 style="font-family:'Playfair Display',serif;font-size:16px;margin-bottom:8px">${r.title}</h3>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">${r.description}</p>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3)">
+          <span>📍 ${r.platform}</span><span>⏱ ${r.estimatedTime}</span>
+        </div>
+      </div>`).join('');
+    document.getElementById('resourcesGrid').style.display = 'grid';
+    SF.UI.toast(`Found ${data.resources.length} resources!`, 'success');
+  } catch { SF.UI.toast('Could not fetch resources. Try again.', 'error'); document.getElementById('resourcePlaceholder').style.display = 'block'; }
+  SF.UI.loading(btn, false, '🔍 Find Resources');
+}
+
+// ── BILLING ──
+function refreshBilling() {
+  const isPro = currentUser.plan === 'pro';
+  document.getElementById('currentPlanBanner').innerHTML = `
+    <div style="background:${isPro?'linear-gradient(135deg,#059669,#0d9488)':'linear-gradient(135deg,#f97316,#ec4899)'};border-radius:var(--radius);padding:20px 24px;color:white;display:flex;align-items:center;justify-content:space-between">
+      <div><div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;opacity:0.7">CURRENT PLAN</div>
+      <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:900;margin-top:4px">${isPro?'⭐ Pro Plan':'Free Plan'}</div></div>
+      ${isPro?'<div style="font-size:28px">✅</div>':''}
+    </div>`;
+  document.getElementById('freePlanBtn').textContent = isPro ? 'Downgrade' : '✓ Current Plan';
+  document.getElementById('proPlanBtn').textContent = isPro ? '✓ Active Plan' : 'Upgrade to Pro →';
+  if (isPro) document.getElementById('proPlanBtn').disabled = true;
+}
+
+function selectPlan(plan) {
+  if (plan === 'free' && currentUser.plan === 'pro') {
+    SF.Auth.updateUser({ plan: 'free' });
+    currentUser.plan = 'free';
+    refreshBilling();
+    SF.UI.toast('Downgraded to Free plan.', 'default');
+  }
+}
+
+function openProModal() { document.getElementById('proModal').classList.add('show'); }
+function closeProModal() { document.getElementById('proModal').classList.remove('show'); }
+function formatCard(el) { let v = el.value.replace(/\D/g,'').slice(0,16); el.value = v.replace(/(\d{4})/g,'$1 ').trim(); }
+
+async function processUpgrade() {
+  const btn = document.getElementById('modalPayBtn');
+  const card = document.getElementById('modalCardNum').value.replace(/\s/g,'');
+  if (card.length < 16) { SF.UI.toast('Invalid card number', 'error'); return; }
+  SF.UI.loading(btn, true);
+  await new Promise(r => setTimeout(r, 2000));
+  SF.Auth.updateUser({ plan: 'pro' });
+  currentUser.plan = 'pro';
+  document.getElementById('userPlan').textContent = '⭐ Pro Plan';
+  closeProModal();
+  refreshBilling();
+  SF.UI.loading(btn, false, 'Pay ₹299 →');
+  SF.UI.toast('🎉 Upgraded to Pro! All features unlocked.', 'success');
+}
+
+function saveSettings() {
+  const name = document.getElementById('settingsName').value.trim();
+  const course = document.getElementById('settingsCourse').value.trim();
+  SF.Auth.updateUser({ name, course });
+  currentUser.name = name;
+  document.getElementById('userName').textContent = name;
+  document.getElementById('welcomeName').textContent = name.split(' ')[0];
+  document.getElementById('userAvatar').textContent = name[0].toUpperCase();
+  SF.UI.toast('Settings saved!', 'success');
+}
+
+function clearData() {
+  if (!confirm('This will delete all your notes, deadlines, and study plans. Are you sure?')) return;
+  SF.Auth.updateUser({ notes: [], deadlines: [], studyPlans: [], summariesUsed: 0 });
+  SF.UI.toast('All data cleared.', 'default');
+  refreshDashboard();
+}
+
+window.addEventListener('resize', checkMobile);
+init();
+</script>
+</body>
+</html>
