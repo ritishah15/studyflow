@@ -76,6 +76,9 @@ const Signup = () => {
             Already have an account? <Link to="/login" className="text-primary hover:underline">Sign in</Link>
           </p>
         </div>
+        <p className="text-center text-xs text-muted-foreground/50 mt-6">
+          © 2026 StudyFlow AI. All rights reserved.
+        </p>
       </div>
     </div>
   );
